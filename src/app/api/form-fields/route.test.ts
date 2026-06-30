@@ -12,11 +12,14 @@ vi.mock("@/lib/ai/classifier", () => ({
 
 import { POST } from "./route";
 import prisma from "@/lib/db";
+import { classify } from "@/lib/ai/classifier";
 
 describe("POST /api/form-fields", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(prisma.case.create).mockResolvedValue({ id: "c1" } as any);
     vi.mocked(prisma.message.create).mockResolvedValue({} as any);
+    vi.mocked(classify).mockResolvedValue({ kategori: "tuketici", belgeTipi: "THH", merci: "İlçe THH", eksikBilgiler: ["tarih", "tutar"] } as any);
   });
 
   it("returns dynamic form fields from classification", async () => {
@@ -61,5 +64,34 @@ describe("POST /api/form-fields", () => {
         data: expect.objectContaining({ baslik: "a".repeat(60) }),
       })
     );
+  });
+
+  it("[400] missing aciklama returns 400 and does not call classify or case.create", async () => {
+    const req = new Request("http://t", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Geçersiz istek: açıklama gerekli.");
+    expect(classify).not.toHaveBeenCalled();
+    expect(prisma.case.create).not.toHaveBeenCalled();
+  });
+
+  it("[400] non-JSON body returns 400 and does not call classify or case.create", async () => {
+    const req = new Request("http://t", {
+      method: "POST",
+      body: "not-json",
+      headers: { "Content-Type": "text/plain" },
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Geçersiz istek: açıklama gerekli.");
+    expect(classify).not.toHaveBeenCalled();
+    expect(prisma.case.create).not.toHaveBeenCalled();
   });
 });

@@ -31,6 +31,7 @@ vi.mock("@/lib/ai/generator", () => ({
 import { POST } from "./route";
 import prisma from "@/lib/db";
 import { generateDocument } from "@/lib/ai/generator";
+import { classify } from "@/lib/ai/classifier";
 
 describe("POST /api/generate", () => {
   beforeEach(() => {
@@ -130,5 +131,35 @@ describe("POST /api/generate", () => {
     // The full second-paragraph secret text must not leak into the JSON response at all
     expect(rawBody).not.toContain("Gizli birinci paragraf metni");
     expect(rawBody).not.toContain("Gizli ikinci paragraf metni");
+  });
+
+  it("[400] missing caseId returns 400 and does not call generateDocument or document.create", async () => {
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ ton: "resmi" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Geçersiz istek: caseId gerekli.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+    expect(classify).not.toHaveBeenCalled();
+  });
+
+  it("[400] non-JSON body returns 400 and does not call generateDocument or document.create", async () => {
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: "not-json",
+      headers: { "Content-Type": "text/plain" },
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Geçersiz istek: caseId gerekli.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
   });
 });

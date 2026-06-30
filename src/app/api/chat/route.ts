@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/db";
 import { classify } from "@/lib/ai/classifier";
 import { nextQuestion } from "@/lib/ai/collector";
 
+const ChatBodySchema = z.object({
+  mesaj: z.string().min(1),
+  caseId: z.string().optional(),
+});
+
 export async function POST(req: NextRequest) {
-  const { caseId, mesaj } = await req.json();
+  let rawBody: unknown;
+  try {
+    rawBody = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Geçersiz istek: mesaj gerekli." }, { status: 400 });
+  }
+  const parsed = ChatBodySchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Geçersiz istek: mesaj gerekli." }, { status: 400 });
+  }
+  const { caseId, mesaj } = parsed.data;
 
   if (!caseId) {
     const classification = await classify(mesaj);

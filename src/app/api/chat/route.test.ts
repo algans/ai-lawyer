@@ -15,10 +15,12 @@ vi.mock("@/lib/ai/collector", () => ({
 
 import { POST } from "./route";
 import prisma from "@/lib/db";
+import { classify } from "@/lib/ai/classifier";
 import { nextQuestion } from "@/lib/ai/collector";
 
 describe("POST /api/chat", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(prisma.case.create).mockResolvedValue({ id: "c1" } as any);
     vi.mocked(prisma.message.create).mockResolvedValue({} as any);
     vi.mocked(nextQuestion).mockResolvedValue({ soru: "Ne zaman aldınız?", tamamlandi: false });
@@ -78,5 +80,35 @@ describe("POST /api/chat", () => {
     expect(body.tamamlandi).toBe(true);
     expect(body.cevap).toContain("Bilgiler tamam");
     expect(body.caseId).toBe("c1");
+  });
+
+  it("[400] missing mesaj returns 400 and does not call classify or nextQuestion", async () => {
+    const req = new Request("http://t/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Geçersiz istek: mesaj gerekli.");
+    expect(classify).not.toHaveBeenCalled();
+    expect(nextQuestion).not.toHaveBeenCalled();
+    expect(prisma.message.create).not.toHaveBeenCalled();
+  });
+
+  it("[400] non-JSON body returns 400 and does not call classify or nextQuestion", async () => {
+    const req = new Request("http://t/api/chat", {
+      method: "POST",
+      body: "not-json",
+      headers: { "Content-Type": "text/plain" },
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Geçersiz istek: mesaj gerekli.");
+    expect(classify).not.toHaveBeenCalled();
+    expect(nextQuestion).not.toHaveBeenCalled();
   });
 });
