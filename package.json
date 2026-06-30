@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "next": "^15.1.0",

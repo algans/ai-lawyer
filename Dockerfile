@@ -4,6 +4,7 @@ RUN apk add --no-cache libc6-compat
 
 FROM base AS deps
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm install
 
 FROM base AS dev
