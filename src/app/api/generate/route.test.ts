@@ -24,17 +24,8 @@ vi.mock("@/lib/ai/generator", () => ({
   generateDocument: vi
     .fn()
     .mockResolvedValue(
-      "GİZLİ BAŞLIK\n\nGizli tam belge metni burada.\n\nİkinci paragraf: bu da gizli."
+      "GÖRÜNÜR BAŞLIK\n\nGizli birinci paragraf metni.\n\nGizli ikinci paragraf metni."
     ),
-}));
-vi.mock("@/lib/preview", () => ({
-  maskPreview: vi.fn((text: string) => {
-    // Real implementation: first paragraph unmasked, rest masked with █
-    const paras = text.split("\n\n");
-    if (paras.length <= 1) return text.slice(0, 200);
-    const masked = paras.slice(1).map((p: string) => p.replace(/\S/g, "█"));
-    return [paras[0], ...masked].join("\n\n");
-  }),
 }));
 
 import { POST } from "./route";
@@ -49,7 +40,7 @@ describe("POST /api/generate", () => {
     ]);
     vi.mocked(prisma.document.create).mockResolvedValue({ id: "d1" } as any);
     vi.mocked(generateDocument).mockResolvedValue(
-      "GİZLİ BAŞLIK\n\nGizli tam belge metni burada.\n\nİkinci paragraf: bu da gizli."
+      "GÖRÜNÜR BAŞLIK\n\nGizli birinci paragraf metni.\n\nGizli ikinci paragraf metni."
     );
   });
 
@@ -63,7 +54,7 @@ describe("POST /api/generate", () => {
 
     expect(body.documentId).toBe("d1");
     // Original brief assertion: full text must NOT appear in onizleme
-    expect(body.onizleme).not.toContain("Gizli tam belge metni");
+    expect(body.onizleme).not.toContain("Gizli birinci paragraf metni");
   });
 
   it("[SECURITY] onizleme does NOT contain any words from later paragraphs", async () => {
@@ -74,21 +65,23 @@ describe("POST /api/generate", () => {
     const res = await POST(req as any);
     const body = await res.json();
 
-    // The first paragraph heading should be present (unmasked)
-    expect(body.onizleme).toContain("GİZLİ BAŞLIK");
+    // The first paragraph heading should be present (unmasked) — real maskPreview leaves it visible
+    expect(body.onizleme).toContain("GÖRÜNÜR BAŞLIK");
 
-    // Words from later paragraphs must be absent from the preview
-    expect(body.onizleme).not.toContain("Gizli tam belge metni burada");
-    expect(body.onizleme).not.toContain("İkinci paragraf");
-    expect(body.onizleme).not.toContain("bu da gizli");
+    // Words from later paragraphs must be absent — real maskPreview replaces \S with █
+    expect(body.onizleme).not.toContain("Gizli birinci paragraf metni");
+    expect(body.onizleme).not.toContain("Gizli ikinci");
+
+    // The mask character █ must be present — proves real masking happened
+    expect(body.onizleme).toContain("█");
 
     // The full document text itself is never in the response
-    expect(JSON.stringify(body)).not.toContain("İkinci paragraf: bu da gizli.");
+    expect(JSON.stringify(body)).not.toContain("Gizli ikinci paragraf metni.");
   });
 
   it("[PERSISTENCE] document.create is called with durum:taslak and full icerik", async () => {
     const fullText =
-      "GİZLİ BAŞLIK\n\nGizli tam belge metni burada.\n\nİkinci paragraf: bu da gizli.";
+      "GÖRÜNÜR BAŞLIK\n\nGizli birinci paragraf metni.\n\nGizli ikinci paragraf metni.";
     vi.mocked(generateDocument).mockResolvedValueOnce(fullText);
 
     const req = new Request("http://t/api/generate", {
@@ -135,7 +128,7 @@ describe("POST /api/generate", () => {
     const rawBody = await res.text();
 
     // The full second-paragraph secret text must not leak into the JSON response at all
-    expect(rawBody).not.toContain("Gizli tam belge metni burada");
-    expect(rawBody).not.toContain("İkinci paragraf: bu da gizli");
+    expect(rawBody).not.toContain("Gizli birinci paragraf metni");
+    expect(rawBody).not.toContain("Gizli ikinci paragraf metni");
   });
 });
