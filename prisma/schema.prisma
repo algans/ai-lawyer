@@ -24,15 +24,19 @@ model User {
 }
 
 model Case {
-  id        String     @id @default(cuid())
-  userId    String?
-  user      User?      @relation(fields: [userId], references: [id])
-  baslik    String
-  kategori  String?
-  durum     String     @default("acik")
-  createdAt DateTime   @default(now())
-  messages  Message[]
-  documents Document[]
+  id            String     @id @default(cuid())
+  userId        String?
+  user          User?      @relation(fields: [userId], references: [id])
+  baslik        String
+  kategori      String?
+  belgeTipi     String?
+  merci         String?
+  eksikBilgiler String[]   @default([])
+  bilgiTamam    Boolean    @default(false)
+  durum         String     @default("acik")
+  createdAt     DateTime   @default(now())
+  messages      Message[]
+  documents     Document[]
 }
 
 model Message {

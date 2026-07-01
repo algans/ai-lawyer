@@ -1,34 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/db";
-import { classify } from "@/lib/ai/classifier";
 import { generateDocument } from "@/lib/ai/generator";
 import { maskPreview } from "@/lib/preview";
+import { caseClassification } from "@/lib/case";
 
-const GenerateBodySchema = z.object({
-  caseId: z.string().min(1),
-  ton: z.enum(["resmi", "sert", "uzlasmaci"]).optional(),
-});
+const Body = z.object({ caseId: z.string().min(1), ton: z.enum(["resmi", "sert", "uzlasmaci"]).optional() });
 
 export async function POST(req: NextRequest) {
-  let rawBody: unknown;
-  try {
-    rawBody = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Geçersiz istek: caseId gerekli." }, { status: 400 });
-  }
-  const parsed = GenerateBodySchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Geçersiz istek: caseId gerekli." }, { status: 400 });
-  }
+  let raw: unknown;
+  try { raw = await req.json(); } catch { return NextResponse.json({ error: "Geçersiz istek: caseId gerekli." }, { status: 400 }); }
+  const parsed = Body.safeParse(raw);
+  if (!parsed.success) return NextResponse.json({ error: "Geçersiz istek: caseId gerekli." }, { status: 400 });
   const { caseId, ton } = parsed.data;
+
+  const kayit = await prisma.case.findUnique({ where: { id: caseId } });
+  if (!kayit) return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
+  if (!kayit.bilgiTamam) return NextResponse.json({ error: "Bilgiler henüz tamamlanmadı." }, { status: 409 });
+
+  const classification = caseClassification(kayit);
+  if (!classification) return NextResponse.json({ error: "Vaka sınıflandırması eksik." }, { status: 409 });
+
   const history = await prisma.message.findMany({ where: { caseId }, orderBy: { createdAt: "asc" } });
-  if (history.length === 0) {
-    return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
-  }
   const toplananBilgi = history.map((m) => `${m.rol}: ${m.icerik}`).join("\n");
-  const firstUser = history.find((m) => m.rol === "user")?.icerik ?? "";
-  const classification = await classify(firstUser);
 
   const icerik = await generateDocument({ classification, toplananBilgi, ton });
   const doc = await prisma.document.create({
