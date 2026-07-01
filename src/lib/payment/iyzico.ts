@@ -56,6 +56,11 @@ export const iyzicoProvider: PaymentProvider = {
   },
   async callbackDogrula(token: string) {
     const result = await retrieve(token);
-    return { basarili: result?.paymentStatus === "SUCCESS", iyzicoRef: result?.paymentId ?? "" };
+    return {
+      basarili: result?.paymentStatus === "SUCCESS",
+      iyzicoRef: result?.paymentId ?? "",
+      paidPrice: Number(result?.paidPrice),
+      currency: result?.currency ?? "",
+    };
   },
 };

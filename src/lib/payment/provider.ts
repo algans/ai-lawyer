@@ -8,5 +8,5 @@ export interface CheckoutInput {
 }
 export interface PaymentProvider {
   checkoutBaslat(i: CheckoutInput): Promise<{ paymentPageUrl: string; token: string }>;
-  callbackDogrula(token: string): Promise<{ basarili: boolean; iyzicoRef: string }>;
+  callbackDogrula(token: string): Promise<{ basarili: boolean; iyzicoRef: string; paidPrice: number; currency: string }>;
 }

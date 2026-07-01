@@ -37,12 +37,17 @@ describe("iyzicoProvider", () => {
   });
   it("callbackDogrula returns basarili=true when paymentStatus SUCCESS", async () => {
     checkoutForm.retrieve.mockImplementation((_req: any, cb: any) =>
-      cb(null, { status: "success", paymentStatus: "SUCCESS", paymentId: "pay1" }));
-    expect(await iyzicoProvider.callbackDogrula("tok1")).toEqual({ basarili: true, iyzicoRef: "pay1" });
+      cb(null, { status: "success", paymentStatus: "SUCCESS", paymentId: "pay1", paidPrice: "99", currency: "TRY" }));
+    expect(await iyzicoProvider.callbackDogrula("tok1")).toEqual({
+      basarili: true,
+      iyzicoRef: "pay1",
+      paidPrice: 99,
+      currency: "TRY",
+    });
   });
   it("callbackDogrula returns basarili=false when not SUCCESS", async () => {
     checkoutForm.retrieve.mockImplementation((_req: any, cb: any) =>
-      cb(null, { status: "success", paymentStatus: "FAILURE", paymentId: "pay1" }));
+      cb(null, { status: "success", paymentStatus: "FAILURE", paymentId: "pay1", paidPrice: "99", currency: "TRY" }));
     expect((await iyzicoProvider.callbackDogrula("tok1")).basarili).toBe(false);
   });
 });

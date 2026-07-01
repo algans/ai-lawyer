@@ -4,6 +4,7 @@ import prisma from "@/lib/db";
 import { generateDocument } from "@/lib/ai/generator";
 import { maskPreview } from "@/lib/preview";
 import { caseClassification } from "@/lib/case";
+import { oturumCurrentUser } from "@/lib/auth";
 
 const Body = z.object({ caseId: z.string().min(1), ton: z.enum(["resmi", "sert", "uzlasmaci"]).optional() });
 
@@ -16,6 +17,15 @@ export async function POST(req: NextRequest) {
 
   const kayit = await prisma.case.findUnique({ where: { id: caseId } });
   if (!kayit) return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
+
+  // Fix 2: Ownership check — reject if case owned by a different user
+  if (kayit.userId) {
+    const oturum = await oturumCurrentUser(req);
+    if (!oturum || oturum.userId !== kayit.userId) {
+      return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
+    }
+  }
+
   if (!kayit.bilgiTamam) return NextResponse.json({ error: "Bilgiler henüz tamamlanmadı." }, { status: 409 });
 
   const classification = caseClassification(kayit);

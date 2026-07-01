@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { findUnique, paymentCreate, caseUpdate, userFindUnique, oturumCurrentUser, checkoutBaslat } = vi.hoisted(() => ({
+const { findUnique, paymentCreate, caseUpdateMany, userFindUnique, oturumCurrentUser, checkoutBaslat } = vi.hoisted(() => ({
   findUnique: vi.fn(),
   paymentCreate: vi.fn(),
-  caseUpdate: vi.fn(),
+  caseUpdateMany: vi.fn(),
   userFindUnique: vi.fn(),
   oturumCurrentUser: vi.fn(),
   checkoutBaslat: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock("@/lib/db", () => ({
   default: {
     document: { findUnique },
     payment: { create: paymentCreate },
-    case: { update: caseUpdate },
+    case: { updateMany: caseUpdateMany },
     user: { findUnique: userFindUnique },
   },
 }));
@@ -74,7 +74,7 @@ describe("POST /api/payment/init", () => {
     expect(checkoutBaslat).not.toHaveBeenCalled();
   });
 
-  it("claims unowned case then starts checkout", async () => {
+  it("claims unowned case atomically then starts checkout", async () => {
     oturumCurrentUser.mockResolvedValue({ userId: "u1" });
     findUnique.mockResolvedValue({ id: "d1", caseId: "c1", case: { userId: null } });
     checkoutBaslat.mockResolvedValue({ paymentPageUrl: "https://iyz/pay", token: "tok2" });
@@ -82,7 +82,7 @@ describe("POST /api/payment/init", () => {
     const req = new Request("http://t", { method: "POST", body: JSON.stringify({ documentId: "d1" }) });
     const res = await POST(req as any);
     expect(res.status).toBe(200);
-    expect(caseUpdate).toHaveBeenCalledWith({ where: { id: "c1" }, data: { userId: "u1" } });
+    expect(caseUpdateMany).toHaveBeenCalledWith({ where: { id: "c1", userId: null }, data: { userId: "u1" } });
     expect(checkoutBaslat).toHaveBeenCalled();
     expect((await res.json()).paymentPageUrl).toBe("https://iyz/pay");
   });
@@ -114,14 +114,14 @@ describe("POST /api/payment/init", () => {
     );
   });
 
-  it("does not call caseUpdate when case already has userId matching current user", async () => {
+  it("does not call caseUpdateMany when case already has userId matching current user", async () => {
     oturumCurrentUser.mockResolvedValue({ userId: "u1" });
     findUnique.mockResolvedValue({ id: "d1", caseId: "c1", case: { userId: "u1" } });
     checkoutBaslat.mockResolvedValue({ paymentPageUrl: "https://iyz/pay", token: "tok1" });
     paymentCreate.mockResolvedValue({ id: "p1" });
     const req = new Request("http://t", { method: "POST", body: JSON.stringify({ documentId: "d1" }) });
     await POST(req as any);
-    expect(caseUpdate).not.toHaveBeenCalled();
+    expect(caseUpdateMany).not.toHaveBeenCalled();
   });
 
   it("response body only contains paymentPageUrl and does not leak document content", async () => {

@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock modules BEFORE imports — vi.mock is hoisted to top of file by Vitest.
-// All vi.fn() calls must live inside the factory to avoid hoisting errors.
+const { oturumCurrentUser } = vi.hoisted(() => ({
+  oturumCurrentUser: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/auth", () => ({ oturumCurrentUser }));
+
 vi.mock("@/lib/db", () => ({
   default: {
     case: {
@@ -37,6 +42,7 @@ import { generateDocument } from "@/lib/ai/generator";
 describe("POST /api/generate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    oturumCurrentUser.mockResolvedValue(null);
     vi.mocked(prisma.case.findUnique).mockResolvedValue({
       id: "c1",
       kategori: "tuketici",
@@ -213,6 +219,31 @@ describe("POST /api/generate", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe("Geçersiz istek: caseId gerekli.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("[SECURITY] owned case with different/missing session returns 404 — generateDocument NOT called", async () => {
+    oturumCurrentUser.mockResolvedValue(null);
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      userId: "owner",
+      kategori: "tuketici",
+      belgeTipi: "THH",
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("Vaka bulunamadı");
     expect(generateDocument).not.toHaveBeenCalled();
     expect(prisma.document.create).not.toHaveBeenCalled();
   });

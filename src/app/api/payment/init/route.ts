@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const doc = await prisma.document.findUnique({ where: { id: parsed.data.documentId }, include: { case: true } });
   if (!doc) return NextResponse.json({ error: "Belge bulunamadı." }, { status: 404 });
   if (doc.case.userId && doc.case.userId !== oturum.userId) return NextResponse.json({ error: "Belge bulunamadı." }, { status: 404 });
-  if (!doc.case.userId) await prisma.case.update({ where: { id: doc.caseId }, data: { userId: oturum.userId } });
+  if (!doc.case.userId) await prisma.case.updateMany({ where: { id: doc.caseId, userId: null }, data: { userId: oturum.userId } });
 
   const user = await prisma.user.findUnique({ where: { id: oturum.userId } });
   const { paymentPageUrl, token } = await iyzicoProvider.checkoutBaslat({
