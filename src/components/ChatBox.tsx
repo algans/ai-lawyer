@@ -10,6 +10,7 @@ export default function ChatBox() {
   const [input, setInput] = useState("");
   const [tamam, setTamam] = useState(false);
   const [onizleme, setOnizleme] = useState<string | null>(null);
+  const [rizaKabul, setRizaKabul] = useState(false);
 
   async function send() {
     if (!input.trim()) return;
@@ -31,7 +32,7 @@ export default function ChatBox() {
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caseId }),
+      body: JSON.stringify({ caseId, rizaOnay: true }),
     });
     const data = await res.json();
     setOnizleme(data.onizleme);
@@ -61,7 +62,21 @@ export default function ChatBox() {
           <input value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Derdinizi anlatın..." />
           <button onClick={send}>Gönder</button>
-          {tamam && <button onClick={generate}>Belgeyi Oluştur</button>}
+          {tamam && (
+            <>
+              <div style={{ margin: "0.5rem 0" }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={rizaKabul}
+                    onChange={(e) => setRizaKabul(e.target.checked)}
+                  />{" "}
+                  <a href="/kvkk">KVKK aydınlatma metni</a> ve sorumluluk reddini okudum, kabul ediyorum.
+                </label>
+              </div>
+              <button onClick={generate} disabled={!rizaKabul}>Belgeyi Oluştur</button>
+            </>
+          )}
         </>
       )}
       {onizleme && (

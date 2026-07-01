@@ -17,7 +17,9 @@ vi.mock("@/lib/db", () => ({
         merci: "İlçe THH",
         eksikBilgiler: [],
         bilgiTamam: true,
+        rizaOnayTarihi: new Date(),
       }),
+      update: vi.fn().mockResolvedValue({}),
     },
     message: {
       findMany: vi.fn().mockResolvedValue([{ rol: "user", icerik: "telefon bozuk" }]),
@@ -50,6 +52,7 @@ describe("POST /api/generate", () => {
       merci: "İlçe THH",
       eksikBilgiler: [],
       bilgiTamam: true,
+      rizaOnayTarihi: new Date(),
     } as any);
     vi.mocked(prisma.message.findMany).mockResolvedValue([
       { rol: "user", icerik: "telefon bozuk" } as any,
@@ -166,6 +169,7 @@ describe("POST /api/generate", () => {
       merci: "İlçe THH",
       eksikBilgiler: [],
       bilgiTamam: true,
+      rizaOnayTarihi: new Date(),
     } as any);
 
     const req = new Request("http://t/api/generate", {
@@ -233,6 +237,7 @@ describe("POST /api/generate", () => {
       merci: "İlçe THH",
       eksikBilgiler: [],
       bilgiTamam: true,
+      rizaOnayTarihi: new Date(),
     } as any);
 
     const req = new Request("http://t/api/generate", {
@@ -246,5 +251,73 @@ describe("POST /api/generate", () => {
     expect(body.error).toBe("Vaka bulunamadı");
     expect(generateDocument).not.toHaveBeenCalled();
     expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("[403] rizaOnayTarihi null and no rizaOnay returns 403 — generateDocument NOT called", async () => {
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      kategori: "tuketici",
+      belgeTipi: "THH",
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+      rizaOnayTarihi: null,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(body.error).toBe("Devam etmek için KVKK aydınlatmasını ve sorumluluk reddini onaylamanız gerekir.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("[RIZAONAY] rizaOnay:true with null rizaOnayTarihi sets rizaOnayTarihi then generates", async () => {
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      kategori: "tuketici",
+      belgeTipi: "THH",
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+      rizaOnayTarihi: null,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1", rizaOnay: true }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(prisma.case.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "c1" },
+        data: expect.objectContaining({ rizaOnayTarihi: expect.any(Date) }),
+      })
+    );
+    expect(generateDocument).toHaveBeenCalled();
+    expect(body.documentId).toBe("d1");
+  });
+
+  it("[RIZAONAY] rizaOnayTarihi already set generates without rizaOnay in body", async () => {
+    // Default mock already has rizaOnayTarihi set — no rizaOnay needed
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(prisma.case.update).not.toHaveBeenCalled();
+    expect(generateDocument).toHaveBeenCalled();
+    expect(body.documentId).toBe("d1");
   });
 });

@@ -1,6 +1,7 @@
 import { callClaude, MODELS } from "./client";
 import type { Classification } from "./classifier";
 import { GENERATOR_SYSTEM, generatorUser, SELFCHECK_SYSTEM } from "./prompts/generator";
+import { SORUMLULUK_REDDI } from "@/lib/legal";
 
 export async function generateDocument(input: {
   classification: Classification;
@@ -23,5 +24,5 @@ export async function generateDocument(input: {
     maxTokens: 4096,
     logMeta: { caseId: input.caseId, asama: "ozkontrol" },
   });
-  return checked.trim();
+  return checked.trim() + "\n\n---\n" + SORUMLULUK_REDDI;
 }

@@ -8,6 +8,7 @@ export default function SmartForm() {
   const [alanlar, setAlanlar] = useState<string[]>([]);
   const [degerler, setDegerler] = useState<Record<string, string>>({});
   const [onizleme, setOnizleme] = useState<string | null>(null);
+  const [rizaKabul, setRizaKabul] = useState(false);
 
   async function getFields() {
     const res = await fetch("/api/form-fields", {
@@ -30,7 +31,7 @@ export default function SmartForm() {
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caseId }),
+      body: JSON.stringify({ caseId, rizaOnay: true }),
     });
     const data = await res.json();
     setOnizleme(data.onizleme);
@@ -75,7 +76,17 @@ export default function SmartForm() {
           />
         </div>
       ))}
-      <button onClick={submit}>Belgeyi Oluştur</button>
+      <div style={{ margin: "0.5rem 0" }}>
+        <label>
+          <input
+            type="checkbox"
+            checked={rizaKabul}
+            onChange={(e) => setRizaKabul(e.target.checked)}
+          />{" "}
+          <a href="/kvkk">KVKK aydınlatma metni</a> ve sorumluluk reddini okudum, kabul ediyorum.
+        </label>
+      </div>
+      <button onClick={submit} disabled={!rizaKabul}>Belgeyi Oluştur</button>
     </div>
   );
 }

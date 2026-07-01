@@ -6,7 +6,7 @@ import { maskPreview } from "@/lib/preview";
 import { caseClassification } from "@/lib/case";
 import { oturumCurrentUser } from "@/lib/auth";
 
-const Body = z.object({ caseId: z.string().min(1), ton: z.enum(["resmi", "sert", "uzlasmaci"]).optional() });
+const Body = z.object({ caseId: z.string().min(1), ton: z.enum(["resmi", "sert", "uzlasmaci"]).optional(), rizaOnay: z.boolean().optional() });
 
 export async function POST(req: NextRequest) {
   let raw: unknown;
@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (!kayit.bilgiTamam) return NextResponse.json({ error: "Bilgiler henüz tamamlanmadı." }, { status: 409 });
+
+  if (kayit.rizaOnayTarihi == null) {
+    if (parsed.data.rizaOnay !== true)
+      return NextResponse.json({ error: "Devam etmek için KVKK aydınlatmasını ve sorumluluk reddini onaylamanız gerekir." }, { status: 403 });
+    await prisma.case.update({ where: { id: caseId }, data: { rizaOnayTarihi: new Date() } });
+  }
 
   const classification = caseClassification(kayit);
   if (!classification) return NextResponse.json({ error: "Vaka sınıflandırması eksik." }, { status: 409 });

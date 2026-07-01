@@ -34,6 +34,7 @@ model Case {
   merci         String?
   eksikBilgiler String[]   @default([])
   bilgiTamam    Boolean    @default(false)
+  rizaOnayTarihi DateTime?
   durum         String     @default("acik")
   createdAt     DateTime   @default(now())
   messages      Message[]
