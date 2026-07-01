@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx eval/run.ts",
+    "e2e": "playwright test",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate"
@@ -27,6 +28,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/iyzipay": "^2.0.3",
     "@types/node": "^22.10.0",
