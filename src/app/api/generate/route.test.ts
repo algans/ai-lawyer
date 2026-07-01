@@ -152,6 +152,29 @@ describe("POST /api/generate", () => {
     expect(prisma.document.create).not.toHaveBeenCalled();
   });
 
+  it("[409] returns 409 and does NOT call generateDocument when case classification is incomplete", async () => {
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      kategori: "tuketici",
+      belgeTipi: null,
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("Vaka sınıflandırması eksik.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
   it("response body never contains the full icerik string", async () => {
     const req = new Request("http://t/api/generate", {
       method: "POST",
