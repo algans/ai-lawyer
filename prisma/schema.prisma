@@ -75,3 +75,14 @@ model Payment {
   iyzicoRef  String?
   createdAt  DateTime     @default(now())
 }
+
+model UsageLog {
+  id           String   @id @default(cuid())
+  caseId       String?
+  asama        String
+  model        String
+  inputToken   Int
+  outputToken  Int
+  tahminiKurus Int
+  createdAt    DateTime @default(now())
+}

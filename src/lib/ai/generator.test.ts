@@ -111,4 +111,34 @@ describe("generateDocument", () => {
     const secondCall = callClaudeMock.mock.calls[1][0];
     expect(secondCall.user).toBe(draftText);
   });
+
+  it("passes logMeta with asama='uretim' to first callClaude call", async () => {
+    callClaudeMock
+      .mockResolvedValueOnce("DRAFT")
+      .mockResolvedValueOnce("CHECKED");
+
+    await generateDocument({
+      classification: { kategori: "tuketici", belgeTipi: "THH", merci: "İlçe THH", eksikBilgiler: [] },
+      toplananBilgi: "Test",
+      caseId: "case-abc",
+    });
+
+    const firstCall = callClaudeMock.mock.calls[0][0];
+    expect(firstCall.logMeta).toEqual({ caseId: "case-abc", asama: "uretim" });
+  });
+
+  it("passes logMeta with asama='ozkontrol' to second callClaude call", async () => {
+    callClaudeMock
+      .mockResolvedValueOnce("DRAFT")
+      .mockResolvedValueOnce("CHECKED");
+
+    await generateDocument({
+      classification: { kategori: "tuketici", belgeTipi: "THH", merci: "İlçe THH", eksikBilgiler: [] },
+      toplananBilgi: "Test",
+      caseId: "case-abc",
+    });
+
+    const secondCall = callClaudeMock.mock.calls[1][0];
+    expect(secondCall.logMeta).toEqual({ caseId: "case-abc", asama: "ozkontrol" });
+  });
 });

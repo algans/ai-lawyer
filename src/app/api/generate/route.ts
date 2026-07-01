@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const history = await prisma.message.findMany({ where: { caseId }, orderBy: { createdAt: "asc" } });
   const toplananBilgi = history.map((m) => `${m.rol}: ${m.icerik}`).join("\n");
 
-  const icerik = await generateDocument({ classification, toplananBilgi, ton });
+  const icerik = await generateDocument({ classification, toplananBilgi, ton, caseId });
   const doc = await prisma.document.create({
     data: { caseId, tip: classification.belgeTipi, merci: classification.merci, icerik, durum: "taslak" },
   });
