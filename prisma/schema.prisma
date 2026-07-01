@@ -59,3 +59,19 @@ model Document {
   durum     DocumentDurum @default(taslak)
   createdAt DateTime      @default(now())
 }
+
+enum PaymentDurum {
+  bekliyor
+  basarili
+  basarisiz
+}
+
+model Payment {
+  id         String       @id @default(cuid())
+  userId     String
+  documentId String
+  tutar      Int
+  durum      PaymentDurum @default(bekliyor)
+  iyzicoRef  String?
+  createdAt  DateTime     @default(now())
+}
