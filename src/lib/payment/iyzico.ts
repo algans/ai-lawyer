@@ -1,15 +1,21 @@
 import Iyzipay from "iyzipay";
 import type { CheckoutInput, PaymentProvider } from "./provider";
 
-const client = new Iyzipay({
-  apiKey: process.env.IYZICO_API_KEY!,
-  secretKey: process.env.IYZICO_SECRET_KEY!,
-  uri: process.env.IYZICO_BASE_URL!,
-});
+let _client: Iyzipay | null = null;
+function getClient(): Iyzipay {
+  if (!_client) {
+    _client = new Iyzipay({
+      apiKey: process.env.IYZICO_API_KEY!,
+      secretKey: process.env.IYZICO_SECRET_KEY!,
+      uri: process.env.IYZICO_BASE_URL!,
+    });
+  }
+  return _client;
+}
 
 function initialize(req: object): Promise<any> {
   return new Promise((resolve, reject) => {
-    (client as any).checkoutFormInitialize.create(req, (err: unknown, result: any) => {
+    (getClient() as any).checkoutFormInitialize.create(req, (err: unknown, result: any) => {
       if (err) return reject(err);
       if (result?.status !== "success") return reject(new Error(result?.errorMessage ?? "iyzico başlatma hatası"));
       resolve(result);
@@ -18,7 +24,7 @@ function initialize(req: object): Promise<any> {
 }
 function retrieve(token: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    (client as any).checkoutForm.retrieve({ locale: Iyzipay.LOCALE.TR, token }, (err: unknown, result: any) => {
+    (getClient() as any).checkoutForm.retrieve({ locale: Iyzipay.LOCALE.TR, token }, (err: unknown, result: any) => {
       if (err) return reject(err);
       resolve(result);
     });
