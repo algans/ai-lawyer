@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface Belge {
@@ -18,14 +18,50 @@ interface Dava {
   documents: Belge[];
 }
 
+function OdemeMesaji() {
+  const searchParams = useSearchParams();
+  const odemeParam = searchParams.get("odeme");
+
+  return (
+    <>
+      {odemeParam === "basarili" && (
+        <div
+          style={{
+            background: "#d4edda",
+            border: "1px solid #c3e6cb",
+            borderRadius: 4,
+            padding: "1rem",
+            marginBottom: "1rem",
+            color: "#155724",
+          }}
+        >
+          Ödemeniz başarıyla alındı. Belgenizi artık indirebilirsiniz.
+        </div>
+      )}
+
+      {odemeParam === "basarisiz" && (
+        <div
+          style={{
+            background: "#f8d7da",
+            border: "1px solid #f5c6cb",
+            borderRadius: 4,
+            padding: "1rem",
+            marginBottom: "1rem",
+            color: "#721c24",
+          }}
+        >
+          Ödeme işlemi başarısız oldu. Lütfen tekrar deneyin.
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function HesapPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [davalar, setDavalar] = useState<Dava[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [odemeYuklen, setOdemeYuklen] = useState<string | null>(null);
-
-  const odemeParam = searchParams.get("odeme");
 
   useEffect(() => {
     fetch("/api/cases")
@@ -68,35 +104,9 @@ export default function HesapPage() {
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "2rem" }}>
       <h1>Hesabım — Belge Geçmişi</h1>
 
-      {odemeParam === "basarili" && (
-        <div
-          style={{
-            background: "#d4edda",
-            border: "1px solid #c3e6cb",
-            borderRadius: 4,
-            padding: "1rem",
-            marginBottom: "1rem",
-            color: "#155724",
-          }}
-        >
-          Ödemeniz başarıyla alındı. Belgenizi artık indirebilirsiniz.
-        </div>
-      )}
-
-      {odemeParam === "basarisiz" && (
-        <div
-          style={{
-            background: "#f8d7da",
-            border: "1px solid #f5c6cb",
-            borderRadius: 4,
-            padding: "1rem",
-            marginBottom: "1rem",
-            color: "#721c24",
-          }}
-        >
-          Ödeme işlemi başarısız oldu. Lütfen tekrar deneyin.
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <OdemeMesaji />
+      </Suspense>
 
       {yukleniyor && <p>Yükleniyor...</p>}
 

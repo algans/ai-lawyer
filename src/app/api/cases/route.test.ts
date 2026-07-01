@@ -57,7 +57,8 @@ describe("GET /api/cases", () => {
 
   it("[SECURITY] yanıt gövdesi icerik alanı içermez", async () => {
     oturumCurrentUser.mockResolvedValue({ userId: "u1" });
-    // Mock sadece select edilen alanları döner — icerik yok
+    // Mock, include:true regresyonunu simüle eder — document nesnesinde icerik alanı VAR.
+    // Route select kullandığı için bu alanı yanıta geçirmemeli; test bunu kanıtlar.
     caseFindMany.mockResolvedValue([
       {
         id: "c1",
@@ -65,8 +66,9 @@ describe("GET /api/cases", () => {
         kategori: "THH",
         createdAt: new Date("2024-01-01"),
         documents: [
-          { id: "d1", tip: "THH", durum: "taslak", createdAt: new Date("2024-01-02") },
+          { id: "d1", tip: "THH", durum: "taslak", createdAt: new Date("2024-01-02"), icerik: GIZLI_ICERIK },
         ],
+        icerik: GIZLI_ICERIK,
       },
     ]);
     const req = new Request("http://localhost/api/cases");
