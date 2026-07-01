@@ -68,6 +68,21 @@ describe("generateDocument", () => {
     expect(doc).toBe("TEMİZ BELGE METNİ");
   });
 
+  it("wraps toplananBilgi in kullanici_girdisi delimiters", async () => {
+    callClaudeMock
+      .mockResolvedValueOnce("DRAFT")
+      .mockResolvedValueOnce("CHECKED");
+
+    await generateDocument({
+      classification: { kategori: "tuketici", belgeTipi: "THH", merci: "İlçe THH", eksikBilgiler: [] },
+      toplananBilgi: "Ad: Ali, Tarih: 01.01.2026",
+    });
+
+    const firstCall = callClaudeMock.mock.calls[0][0];
+    expect(firstCall.user).toContain("<kullanici_girdisi>");
+    expect(firstCall.user).toContain("</kullanici_girdisi>");
+  });
+
   it("uses default ton='resmi' when not provided", async () => {
     callClaudeMock
       .mockResolvedValueOnce("DRAFT")

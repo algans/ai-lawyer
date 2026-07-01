@@ -28,6 +28,13 @@ describe("classify", () => {
     expect(extractJson('a {"x":1} b')).toBe('{"x":1}');
   });
 
+  it("wraps user anlatim in kullanici_girdisi delimiters", async () => {
+    await classify("Telefonum bozuk çıktı");
+    const firstCall = vi.mocked(callClaude).mock.calls[0][0];
+    expect(firstCall.user).toContain("<kullanici_girdisi>");
+    expect(firstCall.user).toContain("</kullanici_girdisi>");
+  });
+
   it("rejects invalid category enum value", async () => {
     vi.mocked(callClaude).mockResolvedValueOnce(
       'İşte sonuç: {"kategori":"gecersiz","belgeTipi":"THH başvurusu","merci":"İlçe THH","eksikBilgiler":["satın alma tarihi"]}'
