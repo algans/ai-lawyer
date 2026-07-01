@@ -8,30 +8,32 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "eval": "tsx eval/run.ts",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@prisma/client": "^6.2.0",
+    "@react-pdf/renderer": "^4.1.6",
+    "bcryptjs": "^2.4.3",
+    "docx": "^9.0.3",
+    "iyzipay": "^2.0.61",
+    "jose": "^5.9.6",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@anthropic-ai/sdk": "^0.39.0",
-    "@prisma/client": "^6.2.0",
-    "zod": "^3.24.0",
-    "bcryptjs": "^2.4.3",
-    "jose": "^5.9.6",
-    "iyzipay": "^2.0.61",
-    "@react-pdf/renderer": "^4.1.6",
-    "docx": "^9.0.3"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/iyzipay": "^2.0.3",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "prisma": "^6.2.0",
-    "vitest": "^2.1.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/iyzipay": "^2.0.3"
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }
