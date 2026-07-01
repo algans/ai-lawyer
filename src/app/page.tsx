@@ -1,7 +1,7 @@
 import Link from "next/link";
 export default function Home() {
   return (
-    <main style={{ maxWidth: 640, margin: "0 auto", textAlign: "center" }}>
+    <main style={{ maxWidth: 640, margin: "0 auto", width: "100%", boxSizing: "border-box", padding: "0 16px", textAlign: "center" }}>
       <h1>AI Hukuki Belge Asistanı</h1>
       <p>Derdinizi anlatın, size uygun hukuki belgeyi hazırlayalım.</p>
       <p><em>Bu bir taslaktır, hukuki tavsiye değildir. Sorumluluk kullanıcıdadır.</em></p>
