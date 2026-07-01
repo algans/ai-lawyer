@@ -21,7 +21,13 @@ export async function POST(req: NextRequest) {
   const { aciklama } = parsed.data;
   const c = await classify(aciklama);
   const created = await prisma.case.create({
-    data: { baslik: aciklama.slice(0, 60), kategori: c.kategori },
+    data: {
+      baslik: aciklama.slice(0, 60),
+      kategori: c.kategori,
+      belgeTipi: c.belgeTipi,
+      merci: c.merci,
+      eksikBilgiler: c.eksikBilgiler,
+    },
   });
   await prisma.message.create({ data: { caseId: created.id, rol: "user", icerik: aciklama } });
   return NextResponse.json({ caseId: created.id, belgeTipi: c.belgeTipi, alanlar: c.eksikBilgiler });

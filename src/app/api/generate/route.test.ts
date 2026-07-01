@@ -1,9 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock modules BEFORE imports — vi.mock is hoisted to top of file by Vitest.
-// All vi.fn() calls must live inside the factory to avoid hoisting errors.
+const { oturumCurrentUser } = vi.hoisted(() => ({
+  oturumCurrentUser: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/auth", () => ({ oturumCurrentUser }));
+
 vi.mock("@/lib/db", () => ({
   default: {
+    case: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: "c1",
+        kategori: "tuketici",
+        belgeTipi: "THH",
+        merci: "İlçe THH",
+        eksikBilgiler: [],
+        bilgiTamam: true,
+      }),
+    },
     message: {
       findMany: vi.fn().mockResolvedValue([{ rol: "user", icerik: "telefon bozuk" }]),
     },
@@ -11,14 +26,6 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn().mockResolvedValue({ id: "d1" }),
     },
   },
-}));
-vi.mock("@/lib/ai/classifier", () => ({
-  classify: vi.fn().mockResolvedValue({
-    kategori: "tuketici",
-    belgeTipi: "THH",
-    merci: "İlçe THH",
-    eksikBilgiler: [],
-  }),
 }));
 vi.mock("@/lib/ai/generator", () => ({
   generateDocument: vi
@@ -31,11 +38,19 @@ vi.mock("@/lib/ai/generator", () => ({
 import { POST } from "./route";
 import prisma from "@/lib/db";
 import { generateDocument } from "@/lib/ai/generator";
-import { classify } from "@/lib/ai/classifier";
 
 describe("POST /api/generate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    oturumCurrentUser.mockResolvedValue(null);
+    vi.mocked(prisma.case.findUnique).mockResolvedValue({
+      id: "c1",
+      kategori: "tuketici",
+      belgeTipi: "THH",
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+    } as any);
     vi.mocked(prisma.message.findMany).mockResolvedValue([
       { rol: "user", icerik: "telefon bozuk" } as any,
     ]);
@@ -104,8 +119,8 @@ describe("POST /api/generate", () => {
     );
   });
 
-  it("[404] returns 404 and does NOT call generateDocument or document.create when no messages", async () => {
-    vi.mocked(prisma.message.findMany).mockResolvedValueOnce([] as any);
+  it("[404] returns 404 and does NOT call generateDocument or document.create when case not found", async () => {
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce(null);
 
     const req = new Request("http://t/api/generate", {
       method: "POST",
@@ -116,6 +131,52 @@ describe("POST /api/generate", () => {
 
     expect(res.status).toBe(404);
     expect(body.error).toBeTruthy();
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("[409] returns 409 and does NOT call generateDocument when bilgiTamam is false", async () => {
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      kategori: "tuketici",
+      belgeTipi: "THH",
+      merci: "İlçe THH",
+      eksikBilgiler: ["tarih"],
+      bilgiTamam: false,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("Bilgiler henüz tamamlanmadı.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("[409] returns 409 and does NOT call generateDocument when case classification is incomplete", async () => {
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      kategori: "tuketici",
+      belgeTipi: null,
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("Vaka sınıflandırması eksik.");
     expect(generateDocument).not.toHaveBeenCalled();
     expect(prisma.document.create).not.toHaveBeenCalled();
   });
@@ -145,7 +206,6 @@ describe("POST /api/generate", () => {
     expect(body.error).toBe("Geçersiz istek: caseId gerekli.");
     expect(generateDocument).not.toHaveBeenCalled();
     expect(prisma.document.create).not.toHaveBeenCalled();
-    expect(classify).not.toHaveBeenCalled();
   });
 
   it("[400] non-JSON body returns 400 and does not call generateDocument or document.create", async () => {
@@ -159,6 +219,31 @@ describe("POST /api/generate", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe("Geçersiz istek: caseId gerekli.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("[SECURITY] owned case with different/missing session returns 404 — generateDocument NOT called", async () => {
+    oturumCurrentUser.mockResolvedValue(null);
+    vi.mocked(prisma.case.findUnique).mockResolvedValueOnce({
+      id: "c1",
+      userId: "owner",
+      kategori: "tuketici",
+      belgeTipi: "THH",
+      merci: "İlçe THH",
+      eksikBilgiler: [],
+      bilgiTamam: true,
+    } as any);
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("Vaka bulunamadı");
     expect(generateDocument).not.toHaveBeenCalled();
     expect(prisma.document.create).not.toHaveBeenCalled();
   });

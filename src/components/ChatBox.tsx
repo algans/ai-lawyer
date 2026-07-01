@@ -5,6 +5,7 @@ type Msg = { rol: "user" | "assistant"; icerik: string };
 
 export default function ChatBox() {
   const [caseId, setCaseId] = useState<string | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [tamam, setTamam] = useState(false);
@@ -17,6 +18,7 @@ export default function ChatBox() {
     setInput("");
     const res = await fetch("/api/chat", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caseId, mesaj: userMsg }),
     });
     const data = await res.json();
@@ -26,9 +28,25 @@ export default function ChatBox() {
   }
 
   async function generate() {
-    const res = await fetch("/api/generate", { method: "POST", body: JSON.stringify({ caseId }) });
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseId }),
+    });
     const data = await res.json();
     setOnizleme(data.onizleme);
+    if (data.documentId) setDocumentId(data.documentId);
+  }
+
+  async function handleIndir() {
+    const r = await fetch("/api/payment/init", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ documentId }),
+    });
+    if (r.status === 401) { window.location.href = "/giris"; return; }
+    const d = await r.json();
+    if (d.paymentPageUrl) window.location.href = d.paymentPageUrl;
   }
 
   return (
@@ -50,7 +68,7 @@ export default function ChatBox() {
         <div>
           <h3>Önizleme</h3>
           <pre style={{ whiteSpace: "pre-wrap" }}>{onizleme}</pre>
-          <button disabled>Tam Belgeyi İndir (yakında — ödeme Faz 2)</button>
+          <button onClick={handleIndir}>Tam Belgeyi İndir — 99 TL</button>
         </div>
       )}
     </div>

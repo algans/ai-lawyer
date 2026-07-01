@@ -29,12 +29,18 @@ describe("POST /api/form-fields", () => {
     expect(body.caseId).toBe("c1");
   });
 
-  it("creates a Case in the database with baslik and kategori", async () => {
+  it("creates a Case in the database with baslik, kategori, belgeTipi, merci, eksikBilgiler", async () => {
     const req = new Request("http://t", { method: "POST", body: JSON.stringify({ aciklama: "telefon bozuk" }) });
     await POST(req as any);
     expect(prisma.case.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ baslik: "telefon bozuk", kategori: "tuketici" }),
+        data: expect.objectContaining({
+          baslik: "telefon bozuk",
+          kategori: "tuketici",
+          belgeTipi: "THH",
+          merci: "İlçe THH",
+          eksikBilgiler: ["tarih", "tutar"],
+        }),
       })
     );
   });
