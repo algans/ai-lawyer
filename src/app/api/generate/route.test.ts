@@ -7,6 +7,13 @@ const { oturumCurrentUser } = vi.hoisted(() => ({
 
 vi.mock("@/lib/auth", () => ({ oturumCurrentUser }));
 
+const { rateLimit, istekAnahtari } = vi.hoisted(() => ({
+  rateLimit: vi.fn().mockReturnValue({ izin: true, kalan: 49 }),
+  istekAnahtari: vi.fn().mockReturnValue("ip:anon"),
+}));
+
+vi.mock("@/lib/ratelimit", () => ({ rateLimit, istekAnahtari }));
+
 vi.mock("@/lib/db", () => ({
   default: {
     case: {
@@ -45,6 +52,8 @@ describe("POST /api/generate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     oturumCurrentUser.mockResolvedValue(null);
+    rateLimit.mockReturnValue({ izin: true, kalan: 49 });
+    istekAnahtari.mockReturnValue("ip:anon");
     vi.mocked(prisma.case.findUnique).mockResolvedValue({
       id: "c1",
       kategori: "tuketici",
@@ -319,5 +328,21 @@ describe("POST /api/generate", () => {
     expect(prisma.case.update).not.toHaveBeenCalled();
     expect(generateDocument).toHaveBeenCalled();
     expect(body.documentId).toBe("d1");
+  });
+
+  it("[429] rate limit exceeded returns 429 and does NOT call generateDocument or document.create", async () => {
+    rateLimit.mockReturnValueOnce({ izin: false, kalan: 0 });
+
+    const req = new Request("http://t/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.error).toBe("Çok fazla istek. Lütfen daha sonra tekrar deneyin.");
+    expect(generateDocument).not.toHaveBeenCalled();
+    expect(prisma.document.create).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const { oturumCurrentUser } = vi.hoisted(() => ({
+  oturumCurrentUser: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/auth", () => ({ oturumCurrentUser }));
+
+const { rateLimit, istekAnahtari } = vi.hoisted(() => ({
+  rateLimit: vi.fn().mockReturnValue({ izin: true, kalan: 39 }),
+  istekAnahtari: vi.fn().mockReturnValue("ip:anon"),
+}));
+
+vi.mock("@/lib/ratelimit", () => ({ rateLimit, istekAnahtari }));
+
 vi.mock("@/lib/db", () => ({
   default: {
     case: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
@@ -21,6 +34,9 @@ import { nextQuestion } from "@/lib/ai/collector";
 describe("POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    oturumCurrentUser.mockResolvedValue(null);
+    rateLimit.mockReturnValue({ izin: true, kalan: 39 });
+    istekAnahtari.mockReturnValue("ip:anon");
     vi.mocked(prisma.case.create).mockResolvedValue({ id: "c1" } as any);
     vi.mocked(prisma.case.findUnique).mockResolvedValue({
       id: "c1",
@@ -158,6 +174,22 @@ describe("POST /api/chat", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe("Geçersiz istek: mesaj gerekli.");
+    expect(classify).not.toHaveBeenCalled();
+    expect(nextQuestion).not.toHaveBeenCalled();
+  });
+
+  it("[429] rate limit exceeded returns 429 and does NOT call classify or nextQuestion", async () => {
+    rateLimit.mockReturnValueOnce({ izin: false, kalan: 0 });
+
+    const req = new Request("http://t/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ mesaj: "telefon bozuk" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.error).toBe("Çok fazla istek. Lütfen daha sonra tekrar deneyin.");
     expect(classify).not.toHaveBeenCalled();
     expect(nextQuestion).not.toHaveBeenCalled();
   });

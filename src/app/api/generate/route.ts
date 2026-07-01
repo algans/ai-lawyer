@@ -5,6 +5,7 @@ import { generateDocument } from "@/lib/ai/generator";
 import { maskPreview } from "@/lib/preview";
 import { caseClassification } from "@/lib/case";
 import { oturumCurrentUser } from "@/lib/auth";
+import { rateLimit, istekAnahtari } from "@/lib/ratelimit";
 
 const Body = z.object({ caseId: z.string().min(1), ton: z.enum(["resmi", "sert", "uzlasmaci"]).optional(), rizaOnay: z.boolean().optional() });
 
@@ -19,11 +20,17 @@ export async function POST(req: NextRequest) {
   if (!kayit) return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
 
   // Fix 2: Ownership check — reject if case owned by a different user
+  const oturum = await oturumCurrentUser(req);
   if (kayit.userId) {
-    const oturum = await oturumCurrentUser(req);
     if (!oturum || oturum.userId !== kayit.userId) {
       return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
     }
+  }
+
+  // Rate limiting
+  const limit = oturum ? 50 : 5;
+  if (!rateLimit(istekAnahtari(req, oturum?.userId), limit, 86400).izin) {
+    return NextResponse.json({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." }, { status: 429 });
   }
 
   if (!kayit.bilgiTamam) return NextResponse.json({ error: "Bilgiler henüz tamamlanmadı." }, { status: 409 });
