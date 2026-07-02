@@ -3,6 +3,8 @@ import { z } from "zod";
 import prisma from "@/lib/db";
 import { classify } from "@/lib/ai/classifier";
 import { nextQuestion } from "@/lib/ai/collector";
+import { oturumCurrentUser } from "@/lib/auth";
+import { rateLimit, istekAnahtari } from "@/lib/ratelimit";
 
 const ChatBodySchema = z.object({
   mesaj: z.string().min(1),
@@ -21,6 +23,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz istek: mesaj gerekli." }, { status: 400 });
   }
   const { caseId, mesaj } = parsed.data;
+
+  // Rate limiting (chat stays anonymous-friendly — auth is optional, only used for limit tier)
+  const oturum = await oturumCurrentUser(req);
+  const chatLimit = oturum ? 400 : 40;
+  if (!rateLimit(istekAnahtari(req, oturum?.userId), chatLimit, 86400).izin) {
+    return NextResponse.json({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." }, { status: 429 });
+  }
 
   if (!caseId) {
     const classification = await classify(mesaj);

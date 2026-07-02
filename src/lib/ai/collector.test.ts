@@ -25,6 +25,13 @@ describe("nextQuestion", () => {
     expect(r.soru).toBeNull();
   });
 
+  it("wraps history icerik in kullanici_girdisi delimiters", async () => {
+    await nextQuestion([{ rol: "user", icerik: "telefon bozuk" }], ["tarih"]);
+    const firstCall = vi.mocked(callClaude).mock.calls[0][0];
+    expect(firstCall.user).toContain("<kullanici_girdisi>");
+    expect(firstCall.user).toContain("</kullanici_girdisi>");
+  });
+
   it("rejects invalid schema - wrong type for tamamlandi", async () => {
     vi.mocked(callClaude).mockResolvedValueOnce('{"tamamlandi":"evet"}');
     await expect(nextQuestion([{ rol: "user", icerik: "telefon bozuk" }], ["x"])).rejects.toThrow();

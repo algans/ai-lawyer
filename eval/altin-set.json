@@ -1,0 +1,74 @@
+[
+  {
+    "anlatim": "İnternetten aldığım telefon arızalı çıktı, satıcı iade kabul etmiyor.",
+    "beklenenKategori": "tuketici",
+    "merciIcermeli": "Tüketici",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Bir kişi beni telefonda tehdit etti, şikayetçi olmak istiyorum.",
+    "beklenenKategori": "savcilik",
+    "merciIcermeli": "Başsavcılık",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Belediye sokağımdaki çöpleri haftalardır toplamıyor.",
+    "beklenenKategori": "kamu",
+    "merciIcermeli": "Belediye",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Aldığım buzdolabı garanti süresi içinde bozuldu, servis onarım yapmıyor.",
+    "beklenenKategori": "tuketici",
+    "merciIcermeli": "Tüketici",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "E-ticaret sitesi sipariş bedelimi iade etmedi, ürün teslim de edilmedi.",
+    "beklenenKategori": "tuketici",
+    "merciIcermeli": "Tüketici",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Komşum gece yarısı sürekli gürültü yapıyor, uyarılara rağmen devam ediyor.",
+    "beklenenKategori": "kira_komsu_is",
+    "merciIcermeli": "Sulh",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "İş yerim haksız yere işten çıkardı, kıdem ve ihbar tazminatı ödemiyor.",
+    "beklenenKategori": "kira_komsu_is",
+    "merciIcermeli": "İş Mahkemesi",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Kiracım kira borcunu ödemeden evi terk etti, depozito kalmadı.",
+    "beklenenKategori": "kira_komsu_is",
+    "merciIcermeli": "Sulh",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Sosyal yardım başvurusu yaptım ama belediye sonuç bildirmedi.",
+    "beklenenKategori": "kamu",
+    "merciIcermeli": "Belediye",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Trafikte karşı taraf kırmızı ışık ihlali yaparak kazaya neden oldu, şikayetçi olmak istiyorum.",
+    "beklenenKategori": "savcilik",
+    "merciIcermeli": "Başsavcılık",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Komşum izinsiz inşaat yaparak balkonu kapattı, güneşimi engelliyor.",
+    "beklenenKategori": "kira_komsu_is",
+    "merciIcermeli": "Sulh",
+    "icermemeli": ["[DOLDURUN]"]
+  },
+  {
+    "anlatim": "Vergi dairesi hatalı ceza kesti, itiraz etmek istiyorum.",
+    "beklenenKategori": "kamu",
+    "merciIcermeli": "Vergi",
+    "icermemeli": ["[DOLDURUN]"]
+  }
+]

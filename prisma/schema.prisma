@@ -34,6 +34,7 @@ model Case {
   merci         String?
   eksikBilgiler String[]   @default([])
   bilgiTamam    Boolean    @default(false)
+  rizaOnayTarihi DateTime?
   durum         String     @default("acik")
   createdAt     DateTime   @default(now())
   messages      Message[]
@@ -74,4 +75,15 @@ model Payment {
   durum      PaymentDurum @default(bekliyor)
   iyzicoRef  String?
   createdAt  DateTime     @default(now())
+}
+
+model UsageLog {
+  id           String   @id @default(cuid())
+  caseId       String?
+  asama        String
+  model        String
+  inputToken   Int
+  outputToken  Int
+  tahminiKurus Int
+  createdAt    DateTime @default(now())
 }

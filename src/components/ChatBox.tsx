@@ -10,6 +10,7 @@ export default function ChatBox() {
   const [input, setInput] = useState("");
   const [tamam, setTamam] = useState(false);
   const [onizleme, setOnizleme] = useState<string | null>(null);
+  const [rizaKabul, setRizaKabul] = useState(false);
 
   async function send() {
     if (!input.trim()) return;
@@ -31,7 +32,7 @@ export default function ChatBox() {
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caseId }),
+      body: JSON.stringify({ caseId, rizaOnay: true }),
     });
     const data = await res.json();
     setOnizleme(data.onizleme);
@@ -50,7 +51,7 @@ export default function ChatBox() {
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", width: "100%", boxSizing: "border-box", padding: "0 16px" }}>
       <div>
         {msgs.map((m, i) => (
           <p key={i}><strong>{m.rol === "user" ? "Siz" : "Asistan"}:</strong> {m.icerik}</p>
@@ -59,16 +60,31 @@ export default function ChatBox() {
       {!onizleme && (
         <>
           <input value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Derdinizi anlatın..." />
-          <button onClick={send}>Gönder</button>
-          {tamam && <button onClick={generate}>Belgeyi Oluştur</button>}
+            onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Derdinizi anlatın..."
+            style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem" }} />
+          <button onClick={send} style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem", padding: "0.6rem" }}>Gönder</button>
+          {tamam && (
+            <>
+              <div style={{ margin: "0.5rem 0" }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={rizaKabul}
+                    onChange={(e) => setRizaKabul(e.target.checked)}
+                  />{" "}
+                  <a href="/kvkk">KVKK aydınlatma metni</a> ve sorumluluk reddini okudum, kabul ediyorum.
+                </label>
+              </div>
+              <button onClick={generate} disabled={!rizaKabul} style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem", padding: "0.6rem" }}>Belgeyi Oluştur</button>
+            </>
+          )}
         </>
       )}
       {onizleme && (
         <div>
           <h3>Önizleme</h3>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{onizleme}</pre>
-          <button onClick={handleIndir}>Tam Belgeyi İndir — 99 TL</button>
+          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{onizleme}</pre>
+          <button onClick={handleIndir} style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem", padding: "0.6rem" }}>Tam Belgeyi İndir — 99 TL</button>
         </div>
       )}
     </div>

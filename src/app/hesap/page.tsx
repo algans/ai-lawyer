@@ -101,7 +101,7 @@ export default function HesapPage() {
   }
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "2rem" }}>
+    <main style={{ maxWidth: 800, margin: "0 auto", width: "100%", boxSizing: "border-box", padding: "2rem 16px" }}>
       <h1>Hesabım — Belge Geçmişi</h1>
 
       <Suspense fallback={null}>
