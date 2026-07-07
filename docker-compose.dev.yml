@@ -4,7 +4,11 @@ services:
       context: .
       target: dev
     ports:
-      - "3000:3000"
+      # Sabit yerel port (run.sh içinde WEB_PORT olarak tanımlı, değişmez).
+      - "${WEB_PORT:-37429}:3000"
+    environment:
+      # Ödeme geri dönüşleri vb. sabit porta işaret etsin.
+      - APP_URL=${APP_URL:-http://localhost:37429}
     volumes:
       - .:/app
       - /app/node_modules

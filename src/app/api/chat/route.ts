@@ -8,7 +8,8 @@ import { rateLimit, istekAnahtari } from "@/lib/ratelimit";
 
 const ChatBodySchema = z.object({
   mesaj: z.string().min(1),
-  caseId: z.string().optional(),
+  // İlk mesajda tarayıcı caseId'yi null gönderir (henüz vaka yok) — null'u da kabul et.
+  caseId: z.string().nullish(),
 });
 
 export async function POST(req: NextRequest) {
@@ -33,6 +34,14 @@ export async function POST(req: NextRequest) {
 
   if (!caseId) {
     const classification = await classify(mesaj);
+    if (!classification) {
+      return NextResponse.json({
+        caseId: null,
+        cevap:
+          "Merhaba! Ben hukuki belge asistanınızım. Size doğru belgeyi hazırlayabilmem için yaşadığınız sorunu kısaca anlatır mısınız? Örneğin: \"İnternetten aldığım ürün arızalı çıktı, satıcı iade etmiyor.\"",
+        tamamlandi: false,
+      });
+    }
     const bilgiTamam = classification.eksikBilgiler.length === 0;
     const c = await prisma.case.create({
       data: {
@@ -42,6 +51,9 @@ export async function POST(req: NextRequest) {
         merci: classification.merci,
         eksikBilgiler: classification.eksikBilgiler,
         bilgiTamam,
+        // Oturum açık kullanıcının vakası baştan ona bağlansın; anonim kalırsa
+        // sahiplenme ödeme adımında (payment/init) yapılır.
+        userId: oturum?.userId,
       },
     });
     await prisma.message.create({ data: { caseId: c.id, rol: "user", icerik: mesaj } });

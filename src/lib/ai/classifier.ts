@@ -10,13 +10,17 @@ export const ClassificationSchema = z.object({
 });
 export type Classification = z.infer<typeof ClassificationSchema>;
 
-export async function classify(anlatim: string): Promise<Classification> {
+// null = metin hukuki bir sorun anlatmıyor (selamlaşma vb.) — prompt'taki açık sözleşme.
+export async function classify(anlatim: string): Promise<Classification | null> {
   const raw = await callClaude({
     model: MODELS.fast,
     system: CLASSIFIER_SYSTEM,
     user: classifierUser(anlatim),
   });
   const json = JSON.parse(extractJson(raw));
+  if (json !== null && typeof json === "object" && (json as Record<string, unknown>).kategori === null) {
+    return null;
+  }
   return ClassificationSchema.parse(json);
 }
 

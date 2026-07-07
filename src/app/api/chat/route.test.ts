@@ -72,6 +72,57 @@ describe("POST /api/chat", () => {
     );
   });
 
+  it("logged-in user: created case is linked to the session user (userId set)", async () => {
+    oturumCurrentUser.mockResolvedValueOnce({ userId: "u1" });
+
+    const req = new Request("http://t/api/chat", { method: "POST", body: JSON.stringify({ mesaj: "telefon bozuk" }) });
+    await POST(req as any);
+
+    expect(prisma.case.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: "u1" }) })
+    );
+  });
+
+  it("anonymous user: created case stays ownerless (no userId)", async () => {
+    const req = new Request("http://t/api/chat", { method: "POST", body: JSON.stringify({ mesaj: "telefon bozuk" }) });
+    await POST(req as any);
+
+    const data = vi.mocked(prisma.case.create).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.userId ?? null).toBeNull();
+  });
+
+  it("greeting / non-legal message: replies conversationally without creating a case", async () => {
+    vi.mocked(classify).mockResolvedValueOnce(null as any);
+
+    const req = new Request("http://t/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ caseId: null, mesaj: "merhaba" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.caseId).toBeNull();
+    expect(body.tamamlandi).toBe(false);
+    expect(body.cevap).toMatch(/anlatır mısınız/i);
+    expect(prisma.case.create).not.toHaveBeenCalled();
+    expect(prisma.message.create).not.toHaveBeenCalled();
+    expect(nextQuestion).not.toHaveBeenCalled();
+  });
+
+  it("treats caseId:null as a first message (browser sends null before a case exists)", async () => {
+    const req = new Request("http://t/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ caseId: null, mesaj: "merhaba" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.caseId).toBe("c1");
+    expect(prisma.case.create).toHaveBeenCalled();
+  });
+
   it("follow-up message: reads classification from Case (no re-classify), returns next question", async () => {
     vi.mocked(prisma.message.findMany).mockResolvedValue([
       { rol: "user", icerik: "telefon bozuk", createdAt: new Date("2024-01-01T00:00:00Z") },

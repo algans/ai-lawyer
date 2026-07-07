@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { IconAlertCircle } from "@/components/icons";
 
 interface AuthFormProps {
   mod: "kayit" | "giris";
@@ -44,12 +45,21 @@ export default function AuthForm({ mod }: AuthFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 400 }}>
+    <form onSubmit={handleSubmit} className="card" style={{ padding: 28 }}>
+      {hata && (
+        <div className="banner banner-error" role="alert" style={{ borderRadius: 10, padding: "11px 13px", alignItems: "center", gap: 9 }}>
+          <span style={{ color: "var(--error)", display: "flex", flexShrink: 0 }}><IconAlertCircle size={17} strokeWidth={2} /></span>
+          <p style={{ fontSize: 14 }}>{hata}</p>
+        </div>
+      )}
       {mod === "kayit" && (
-        <div>
-          <label htmlFor="ad">Ad (isteğe bağlı)</label>
+        <div style={{ marginBottom: 16 }}>
+          <label className="field-label" htmlFor="ad">
+            Ad <span style={{ color: "var(--faint)", fontWeight: 400 }}>(isteğe bağlı)</span>
+          </label>
           <input
             id="ad"
+            className="input"
             type="text"
             value={ad}
             onChange={(e) => setAd(e.target.value)}
@@ -57,10 +67,11 @@ export default function AuthForm({ mod }: AuthFormProps) {
           />
         </div>
       )}
-      <div>
-        <label htmlFor="email">E-posta</label>
+      <div style={{ marginBottom: 16 }}>
+        <label className="field-label" htmlFor="email">E-posta</label>
         <input
           id="email"
+          className="input"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -68,10 +79,11 @@ export default function AuthForm({ mod }: AuthFormProps) {
           required
         />
       </div>
-      <div>
-        <label htmlFor="parola">Parola</label>
+      <div style={{ marginBottom: 22 }}>
+        <label className="field-label" htmlFor="parola">Parola</label>
         <input
           id="parola"
+          className="input"
           type="password"
           value={parola}
           onChange={(e) => setParola(e.target.value)}
@@ -79,8 +91,12 @@ export default function AuthForm({ mod }: AuthFormProps) {
           required
         />
       </div>
-      {hata && <p style={{ color: "red" }}>{hata}</p>}
-      <button type="submit" disabled={yukleniyor}>
+      <button
+        type="submit"
+        disabled={yukleniyor}
+        data-busy={yukleniyor}
+        className="btn btn-primary btn-block btn-cta"
+      >
         {yukleniyor ? "Lütfen bekleyin..." : mod === "kayit" ? "Kayıt Ol" : "Giriş Yap"}
       </button>
     </form>

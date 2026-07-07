@@ -18,6 +18,9 @@ async function main() {
     console.log(`\n→ Senaryo: ${senaryo.anlatim.slice(0, 60)}...`);
     try {
       const classification = await classify(senaryo.anlatim);
+      if (!classification) {
+        throw new Error("model anlatımda hukuki sorun tespit edemedi (kategori: null)");
+      }
       const sahteEkBilgi = classification.eksikBilgiler.map((e) => `${e}: TEST`).join("\n");
       const belge = await generateDocument({
         classification,

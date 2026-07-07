@@ -6,8 +6,9 @@ import { test, expect } from "@playwright/test";
 test("landing sayfası her iki mod bağlantısını gösterir", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "AI Hukuki Belge Asistanı" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Serbest Anlat/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Adım Adım Form/i })).toBeVisible();
+  // Mod kartları tasarım gereği tıklanabilir bağlantı (link) olarak işaretlenir
+  await expect(page.getByRole("link", { name: /Serbest Anlat/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Adım Adım Form/i })).toBeVisible();
 });
 
 test("/giris sayfası e-posta ve parola alanlarını içerir", async ({ page }) => {
@@ -35,7 +36,7 @@ test("/kvkk sayfası aydınlatma metnini gösterir", async ({ page }) => {
 test.skip("tam akış: serbest anlatı → ödeme → belge indir", async ({ page }) => {
   // 1. Landing'den chat moduna gir
   await page.goto("/");
-  await page.getByRole("button", { name: /Serbest Anlat/i }).click();
+  await page.getByRole("link", { name: /Serbest Anlat/i }).click();
 
   // 2. Hukuki durumu anlat ve belge türü seç
   await page.waitForURL("**/chat**");

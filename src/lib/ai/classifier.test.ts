@@ -20,8 +20,9 @@ describe("classify", () => {
 
   it("parses and validates classification JSON", async () => {
     const c = await classify("Telefonum bozuk çıktı, iade alamadım");
-    expect(c.kategori).toBe("tuketici");
-    expect(c.eksikBilgiler).toContain("satın alma tarihi");
+    expect(c).not.toBeNull();
+    expect(c!.kategori).toBe("tuketici");
+    expect(c!.eksikBilgiler).toContain("satın alma tarihi");
   });
 
   it("extractJson pulls JSON out of surrounding text", () => {
@@ -33,6 +34,14 @@ describe("classify", () => {
     const firstCall = vi.mocked(callClaude).mock.calls[0][0];
     expect(firstCall.user).toContain("<kullanici_girdisi>");
     expect(firstCall.user).toContain("</kullanici_girdisi>");
+  });
+
+  it("returns null when the text is not a legal problem (model returns kategori:null)", async () => {
+    vi.mocked(callClaude).mockResolvedValueOnce(
+      '{"kategori":null,"belgeTipi":null,"merci":null,"eksikBilgiler":[]}'
+    );
+    const c = await classify("merhaba");
+    expect(c).toBeNull();
   });
 
   it("rejects invalid category enum value", async () => {
