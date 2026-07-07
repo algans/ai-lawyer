@@ -3,9 +3,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 FROM base AS deps
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm install
+RUN npm ci
 
 FROM base AS dev
 COPY --from=deps /app/node_modules ./node_modules
