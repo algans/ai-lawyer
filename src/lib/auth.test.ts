@@ -16,4 +16,22 @@ describe("auth", () => {
     expect(await oturumDogrula(undefined)).toBeNull();
     expect(await oturumDogrula("bozuk.token.xyz")).toBeNull();
   });
+  it("refuses to sign when SESSION_SECRET is missing (no empty-key forgery)", async () => {
+    const onceki = process.env.SESSION_SECRET;
+    try {
+      delete process.env.SESSION_SECRET;
+      await expect(oturumTokeni("user-1")).rejects.toThrow(/SESSION_SECRET/);
+    } finally {
+      process.env.SESSION_SECRET = onceki;
+    }
+  });
+  it("refuses to sign when SESSION_SECRET is shorter than 32 chars", async () => {
+    const onceki = process.env.SESSION_SECRET;
+    try {
+      process.env.SESSION_SECRET = "kisa-secret";
+      await expect(oturumTokeni("user-1")).rejects.toThrow(/32/);
+    } finally {
+      process.env.SESSION_SECRET = onceki;
+    }
+  });
 });

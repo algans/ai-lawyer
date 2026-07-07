@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/db";
-import { dogrulaParola, oturumTokeni, COOKIE_ADI } from "@/lib/auth";
+import { dogrulaParolaSabitZaman, oturumTokeni, COOKIE_ADI } from "@/lib/auth";
+import { rateLimit, istekAnahtari } from "@/lib/ratelimit";
 
 const Body = z.object({ email: z.string().email(), parola: z.string().min(1) });
 
@@ -12,8 +13,15 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "E-posta ve parola gerekli." }, { status: 400 });
   const { email, parola } = parsed.data;
 
+  // Brute-force / credential-stuffing koruması: IP başına 10 deneme / 15 dk.
+  if (!rateLimit(`login:${istekAnahtari(req)}`, 10, 900).izin) {
+    return NextResponse.json({ error: "Çok fazla deneme. Lütfen daha sonra tekrar deneyin." }, { status: 429 });
+  }
+
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user?.parolaHash || !(await dogrulaParola(parola, user.parolaHash))) {
+  // bcrypt HER durumda (kullanıcı yoksa dummy hash ile) önce çalışsın → sabit zaman.
+  const gecerli = await dogrulaParolaSabitZaman(parola, user?.parolaHash);
+  if (!user || !gecerli) {
     return NextResponse.json({ error: "E-posta veya parola hatalı." }, { status: 401 });
   }
   const res = NextResponse.json({ userId: user.id });

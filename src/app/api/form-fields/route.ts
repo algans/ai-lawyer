@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/db";
 import { classify } from "@/lib/ai/classifier";
 import { oturumCurrentUser } from "@/lib/auth";
+import { rateLimit, istekAnahtari } from "@/lib/ratelimit";
 
 const FormFieldsBodySchema = z.object({
   aciklama: z.string().min(1),
@@ -25,6 +26,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz istek: açıklama gerekli." }, { status: 400 });
   }
   const { aciklama } = parsed.data;
+
+  // Maliyet-DoS koruması: ücretli classify çağrısından ÖNCE rate-limit.
+  const oturum = await oturumCurrentUser(req);
+  const limit = oturum ? 100 : 20;
+  if (!rateLimit(`formfields:${istekAnahtari(req, oturum?.userId)}`, limit, 86400).izin) {
+    return NextResponse.json({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." }, { status: 429 });
+  }
+
   const c = await classify(aciklama);
   if (!c) {
     return NextResponse.json(
@@ -32,7 +41,6 @@ export async function POST(req: NextRequest) {
       { status: 422 }
     );
   }
-  const oturum = await oturumCurrentUser(req);
   const created = await prisma.case.create({
     data: {
       baslik: aciklama.slice(0, 60),

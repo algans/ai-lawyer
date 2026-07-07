@@ -13,6 +13,12 @@ vi.mock("@/lib/auth", () => ({
   oturumCurrentUser: vi.fn().mockResolvedValue(null),
 }));
 
+const { rateLimit, istekAnahtari } = vi.hoisted(() => ({
+  rateLimit: vi.fn().mockReturnValue({ izin: true, kalan: 19 }),
+  istekAnahtari: vi.fn().mockReturnValue("ip:anon"),
+}));
+vi.mock("@/lib/ratelimit", () => ({ rateLimit, istekAnahtari }));
+
 import { POST, PUT } from "./route";
 import prisma from "@/lib/db";
 import { classify } from "@/lib/ai/classifier";
@@ -25,6 +31,17 @@ describe("POST /api/form-fields", () => {
     vi.mocked(prisma.message.create).mockResolvedValue({} as any);
     vi.mocked(classify).mockResolvedValue({ kategori: "tuketici", belgeTipi: "THH", merci: "İlçe THH", eksikBilgiler: ["tarih", "tutar"] } as any);
     vi.mocked(oturumCurrentUser).mockResolvedValue(null as any);
+    rateLimit.mockReturnValue({ izin: true, kalan: 19 });
+    istekAnahtari.mockReturnValue("ip:anon");
+  });
+
+  it("[429] rate limit exceeded returns 429 and does NOT call classify or case.create", async () => {
+    rateLimit.mockReturnValueOnce({ izin: false, kalan: 0 });
+    const req = new Request("http://t", { method: "POST", body: JSON.stringify({ aciklama: "telefon bozuk" }) });
+    const res = await POST(req as any);
+    expect(res.status).toBe(429);
+    expect(classify).not.toHaveBeenCalled();
+    expect(prisma.case.create).not.toHaveBeenCalled();
   });
 
   it("returns dynamic form fields from classification", async () => {

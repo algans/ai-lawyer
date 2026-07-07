@@ -65,9 +65,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ caseId: c.id, cevap, tamamlandi: q.tamamlandi });
   }
 
-  await prisma.message.create({ data: { caseId, rol: "user", icerik: mesaj } });
+  // Sahiplik kapısı: mesajı YAZMADAN ÖNCE vakayı doğrula (generate/form-fields ile
+  // aynı desen). Başkasının vakasına mesaj eklemeyi (IDOR) engeller.
   const kayit = await prisma.case.findUnique({ where: { id: caseId } });
   if (!kayit) return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
+  if (kayit.userId && (!oturum || oturum.userId !== kayit.userId)) {
+    return NextResponse.json({ error: "Vaka bulunamadı" }, { status: 404 });
+  }
+  await prisma.message.create({ data: { caseId, rol: "user", icerik: mesaj } });
   const history = await prisma.message.findMany({ where: { caseId }, orderBy: { createdAt: "asc" } });
   const q = await nextQuestion(
     history.map((m) => ({ rol: m.rol, icerik: m.icerik })),

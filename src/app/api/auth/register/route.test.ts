@@ -7,10 +7,29 @@ const { findUnique, create } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/db", () => ({ default: { user: { findUnique, create } } }));
 
+const { rateLimit, istekAnahtari } = vi.hoisted(() => ({
+  rateLimit: vi.fn().mockReturnValue({ izin: true, kalan: 9 }),
+  istekAnahtari: vi.fn().mockReturnValue("ip:anon"),
+}));
+vi.mock("@/lib/ratelimit", () => ({ rateLimit, istekAnahtari }));
+
 import { POST } from "./route";
 
 describe("POST /api/auth/register", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    rateLimit.mockReturnValue({ izin: true, kalan: 9 });
+    istekAnahtari.mockReturnValue("ip:anon");
+  });
+
+  it("[429] rate limit exceeded returns 429 without touching the database", async () => {
+    rateLimit.mockReturnValueOnce({ izin: false, kalan: 0 });
+    const req = new Request("http://t", { method: "POST", body: JSON.stringify({ email: "a@b.com", parola: "gizli123" }) });
+    const res = await POST(req as any);
+    expect(res.status).toBe(429);
+    expect(findUnique).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
   it("creates a user and sets session cookie", async () => {
     findUnique.mockResolvedValue(null);
     create.mockResolvedValue({ id: "u1" });

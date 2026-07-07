@@ -229,6 +229,25 @@ describe("POST /api/chat", () => {
     expect(nextQuestion).not.toHaveBeenCalled();
   });
 
+  it("[404] existing case owned by another user: rejects, appends no message (IDOR guard)", async () => {
+    oturumCurrentUser.mockResolvedValue({ userId: "u2" }); // farklı kullanıcı
+    vi.mocked(prisma.case.findUnique).mockResolvedValue({
+      id: "c1", userId: "u1", eksikBilgiler: ["tarih"], bilgiTamam: false,
+    } as any);
+
+    const req = new Request("http://t/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ caseId: "c1", mesaj: "başkasının vakasına yazıyorum" }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("Vaka bulunamadı");
+    expect(prisma.message.create).not.toHaveBeenCalled();
+    expect(nextQuestion).not.toHaveBeenCalled();
+  });
+
   it("[429] rate limit exceeded returns 429 and does NOT call classify or nextQuestion", async () => {
     rateLimit.mockReturnValueOnce({ izin: false, kalan: 0 });
 
