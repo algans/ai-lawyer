@@ -37,7 +37,7 @@ export default function Footer() {
           <span style={{ fontSize: 13.5, color: "#6f8f81" }}>Güvenli ödeme • iyzico</span>
         </div>
         <div style={{ marginTop: 16, textAlign: "center" }}>
-          <span style={{ fontSize: 12.5, color: "#6f8f81" }}>Copyright 2027</span>
+          <span style={{ fontSize: 12.5, color: "#6f8f81" }}>Copyright 2026</span>
         </div>
       </div>
     </footer>
