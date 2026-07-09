@@ -1,4 +1,17 @@
 node_modules
 .next
 .env
+.env.*
 .git
+.gitignore
+.superpowers
+.playwright-mcp
+e2e
+docs
+*.png
+*.log
+npm-debug.log*
+Dockerfile
+docker-compose*.yml
+run.sh
+mobile
