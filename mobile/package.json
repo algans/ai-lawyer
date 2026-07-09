@@ -40,6 +40,11 @@
     "jest-expo": "^57.0.1",
     "typescript": "~6.0.3"
   },
+  "expo": {
+    "install": {
+      "exclude": ["@types/jest"]
+    }
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",

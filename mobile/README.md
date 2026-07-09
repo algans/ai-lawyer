@@ -1,56 +1,79 @@
-# Welcome to your Expo app 👋
+# Hukuki Asistan — Mobil (Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Web uygulamasının **serbest mod** (sohbet) MVP'si. Expo Router (SDK 57) + TypeScript.
+Mevcut Next.js REST API'nin ince istemcisidir; kendi backend'i yoktur.
 
-## Get started
+## Akış
 
-1. Install dependencies
+Sohbet (anonim başlar) → soru-cevap ile bilgi toplama → KVKK onayı + "Belgeyi Oluştur"
+→ maskeli Önizleme + paywall → "Öde ve indir" → (giriş gerekli) → sağlayıcı checkout (in-app tarayıcı)
+→ ödeme onayı → belge kilidi açılır → PDF/Word indir.
 
-   ```bash
-   npm install
-   ```
+## Çalıştırma
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+> Not: Bu makinede Node 22 fnm ile gelir; Expo LTS ister. Komutları `fnm exec --using=22 -- ...` ile
+> koşun veya `fnm use 22` yapın. (Sistemdeki Node 25 Expo araçlarını uyarabilir.)
 
 ```bash
-npm run reset-project
+cd mobile
+npm install
+npx expo start            # çıkan QR'ı Expo Go ile okutun (SDK 57 destekleyen Expo Go gerekir)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Varsayılan backend: `https://ai-hukuki-asistan.fly.dev`.
+Farklı backend için:
 
-### Other setup steps
+```bash
+EXPO_PUBLIC_API_URL=https://baska-backend npx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Ön koşul
 
-## Learn more
+Backend'e **token-auth değişikliği** (Bearer + login/register yanıtında token) DEPLOY edilmiş olmalı;
+aksi halde giriş, ödeme ve Belgelerim adımları 401 verir. (Anonim sohbet + önizleme deploy olmadan da çalışır.)
 
-To learn more about developing your project with Expo, look at the following resources:
+## Test / doğrulama
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm test                  # lib birim testleri (api, token) — jest-expo
+npx tsc --noEmit          # tip kontrolü (test dosyaları hariç; onlar jest ile doğrulanır)
+npx expo export --platform ios   # Metro bundle smoke testi (import/route çözümü)
+```
 
-## Join the community
+## Yapı
 
-Join our community of developers creating universal apps.
+```
+src/
+  app/
+    _layout.tsx              # fontlar + AuthProvider + SafeArea + Stack
+    (tabs)/
+      _layout.tsx            # alt sekme: Sohbet · Belgelerim · Hesap
+      index.tsx              # Sohbet (çekirdek)
+      belgelerim.tsx         # /api/cases
+      hesap.tsx              # giriş/çıkış
+    onizleme/[documentId].tsx# önizleme + paywall sheet
+    giris.tsx, kayit.tsx     # token tabanlı auth (modal)
+  components/                # Button, Field, Banner, GreenHeader, ChatBubble, TypingDots, RizaOnay, DocPreview, PaywallSheet
+  lib/
+    api.ts                   # fetch sarmalayıcı (Bearer enjekte)
+    auth.tsx                 # AuthContext
+    token.ts                 # SecureStore
+    theme.ts                 # tasarım tokenları (web globals.css portu)
+    config.ts, types.ts, odeme.ts, preview-cache.ts
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Tasarım
+
+Versiyon B (native): yeşil başlık + altın çizgi, alt sekme çubuğu, mint tonlu asistan balonları,
+bottom-sheet paywall. Palet ve tipografi web ile birebir (Inter + Lora).
+
+## Manuel dumanlanma listesi (Expo Go, fiziksel telefon)
+
+1. `npx expo start` → Expo Go ile QR → uygulama 3 sekmeyle açılır.
+2. Sohbet: derdini yaz → asistan soru sorar → bilgi tamamlanınca "Belgeyi Oluştur" belirir.
+3. Oluştur → Önizleme, maskeli metin + "Web'de öde ve indir".
+4. Öde → giriş yoksa Giriş modalı → giriş/kayıt → geri dönüş.
+5. Ödeme sheet → sağlayıcı checkout (in-app tarayıcı) → sandbox kartla öde.
+6. Dönüşte "Ödeme alındı" → PDF/Word indir → paylaşım sayfası açılır.
+7. Belgelerim: vaka listelenir, durum rozeti doğru.
+8. Hesap: çıkış → korumalı ekranlar tekrar giriş ister.
