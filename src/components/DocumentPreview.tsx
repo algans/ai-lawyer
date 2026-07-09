@@ -13,18 +13,18 @@ interface DocumentPreviewProps {
 // İçerik sunucuda maskelenir (maskPreview) — görsel karartma sadece süsleme,
 // tam metin hiçbir zaman istemciye inmez.
 export default function DocumentPreview({ onizleme, documentId }: DocumentPreviewProps) {
-  const [yonlendiriliyor, setYonlendiriliyor] = useState(false);
+  const [yukleniyor, setYukleniyor] = useState<"iyzico" | "stripe" | null>(null);
   const [hata, setHata] = useState<string | null>(null);
 
-  async function odeVeIndir() {
-    if (!documentId || yonlendiriliyor) return;
-    setYonlendiriliyor(true);
+  async function odeVeIndir(saglayici: "iyzico" | "stripe") {
+    if (!documentId || yukleniyor) return;
+    setYukleniyor(saglayici);
     setHata(null);
     try {
       const r = await fetch("/api/payment/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId }),
+        body: JSON.stringify({ documentId, saglayici }),
       });
       if (r.status === 401) {
         window.location.href = "/giris";
@@ -36,10 +36,10 @@ export default function DocumentPreview({ onizleme, documentId }: DocumentPrevie
         return;
       }
       setHata(d.error ?? "Ödeme başlatılamadı. Lütfen tekrar deneyin.");
-      setYonlendiriliyor(false);
+      setYukleniyor(null);
     } catch {
       setHata("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
-      setYonlendiriliyor(false);
+      setYukleniyor(null);
     }
   }
 
@@ -67,20 +67,29 @@ export default function DocumentPreview({ onizleme, documentId }: DocumentPrevie
             Ödemeyi tamamlayın, belgenizi PDF ve Word olarak anında indirin.
           </p>
           <button
-            onClick={odeVeIndir}
-            disabled={yonlendiriliyor}
-            data-busy={yonlendiriliyor}
+            onClick={() => odeVeIndir("iyzico")}
+            disabled={yukleniyor !== null}
+            data-busy={yukleniyor === "iyzico"}
             className="btn btn-primary btn-block btn-cta"
           >
             <IconDownload size={18} strokeWidth={2} />
-            {yonlendiriliyor ? "Yönlendiriliyor..." : `Tam Belgeyi İndir — ${BELGE_FIYATI} TL`}
+            {yukleniyor === "iyzico" ? "Yönlendiriliyor..." : `Tam Belgeyi İndir — ${BELGE_FIYATI} TL`}
+          </button>
+          <button
+            onClick={() => odeVeIndir("stripe")}
+            disabled={yukleniyor !== null}
+            data-busy={yukleniyor === "stripe"}
+            className="btn btn-outline btn-block"
+            style={{ marginTop: 8 }}
+          >
+            {yukleniyor === "stripe" ? "Yönlendiriliyor..." : "Kart ile öde (Stripe)"}
           </button>
           {hata && (
             <p role="alert" style={{ margin: "10px 0 0", fontSize: 13.5, color: "var(--error-ink)" }}>{hata}</p>
           )}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, color: "var(--muted)", fontSize: 13 }}>
             <IconShield size={14} strokeWidth={2} />
-            Güvenli ödeme • iyzico
+            Güvenli ödeme • iyzico / Stripe
           </div>
           <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "var(--faint)" }}>PDF ve Word olarak indir</p>
         </div>

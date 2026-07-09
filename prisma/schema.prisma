@@ -73,7 +73,8 @@ model Payment {
   documentId String
   tutar      Int
   durum      PaymentDurum @default(bekliyor)
-  iyzicoRef  String?
+  saglayici  String       @default("iyzico") // "iyzico" | "stripe"
+  iyzicoRef  String?                          // aktif sağlayıcının referansı (iyzico token / stripe session id)
   createdAt  DateTime     @default(now())
 }
 

@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/db";
 import { oturumCurrentUser } from "@/lib/auth";
-import { iyzicoProvider } from "@/lib/payment/iyzico";
+import { getSaglayici, type Saglayici } from "@/lib/payment";
 import { BELGE_FIYATI } from "@/lib/pricing";
 
-const Body = z.object({ documentId: z.string().min(1) });
+const Body = z.object({
+  documentId: z.string().min(1),
+  saglayici: z.enum(["iyzico", "stripe"]).optional(),
+});
 
 export async function POST(req: NextRequest) {
   const oturum = await oturumCurrentUser(req);
@@ -21,8 +24,9 @@ export async function POST(req: NextRequest) {
   if (doc.case.userId && doc.case.userId !== oturum.userId) return NextResponse.json({ error: "Belge bulunamadı." }, { status: 404 });
   if (!doc.case.userId) await prisma.case.updateMany({ where: { id: doc.caseId, userId: null }, data: { userId: oturum.userId } });
 
+  const saglayici: Saglayici = parsed.data.saglayici ?? "iyzico";
   const user = await prisma.user.findUnique({ where: { id: oturum.userId } });
-  const { paymentPageUrl, token } = await iyzicoProvider.checkoutBaslat({
+  const { paymentPageUrl, token } = await getSaglayici(saglayici).checkoutBaslat({
     documentId: doc.id,
     tutar: BELGE_FIYATI,
     conversationId: doc.id,
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
     buyerId: oturum.userId,
   });
   await prisma.payment.create({
-    data: { userId: oturum.userId, documentId: doc.id, tutar: BELGE_FIYATI, durum: "bekliyor", iyzicoRef: token },
+    data: { userId: oturum.userId, documentId: doc.id, tutar: BELGE_FIYATI, durum: "bekliyor", saglayici, iyzicoRef: token },
   });
   return NextResponse.json({ paymentPageUrl });
 }

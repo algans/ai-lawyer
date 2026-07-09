@@ -102,14 +102,14 @@ export default function HesapPage() {
       .finally(() => setYukleniyor(false));
   }, [router]);
 
-  async function odeVeIndir(belgeId: string) {
+  async function odeVeIndir(belgeId: string, saglayici: "iyzico" | "stripe" = "iyzico") {
     setOdemeYuklen(belgeId);
     setHata(null);
     try {
       const res = await fetch("/api/payment/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: belgeId }),
+        body: JSON.stringify({ documentId: belgeId, saglayici }),
       });
       const data = await res.json();
       if (data.paymentPageUrl) {
@@ -199,15 +199,25 @@ export default function HesapPage() {
                           </a>
                         </>
                       ) : (
-                        <button
-                          onClick={() => odeVeIndir(belge.id)}
-                          disabled={odemeYuklen === belge.id}
-                          data-busy={odemeYuklen === belge.id}
-                          className="btn btn-primary btn-cta"
-                          style={{ padding: "10px 16px", fontSize: 14, borderRadius: 9 }}
-                        >
-                          {odemeYuklen === belge.id ? "Yönlendiriliyor..." : `Öde ve İndir (${BELGE_FIYATI} TL)`}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => odeVeIndir(belge.id, "iyzico")}
+                            disabled={odemeYuklen === belge.id}
+                            data-busy={odemeYuklen === belge.id}
+                            className="btn btn-primary btn-cta"
+                            style={{ padding: "10px 16px", fontSize: 14, borderRadius: 9 }}
+                          >
+                            {odemeYuklen === belge.id ? "Yönlendiriliyor..." : `Öde ve İndir (${BELGE_FIYATI} TL)`}
+                          </button>
+                          <button
+                            onClick={() => odeVeIndir(belge.id, "stripe")}
+                            disabled={odemeYuklen === belge.id}
+                            className="btn btn-outline"
+                            style={{ padding: "10px 16px", fontSize: 14, borderRadius: 9 }}
+                          >
+                            Kart (Stripe)
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
