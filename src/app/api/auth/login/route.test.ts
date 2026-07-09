@@ -47,6 +47,18 @@ describe("POST /api/auth/login", () => {
     expect(res.headers.get("set-cookie")).toContain("oturum=");
   });
 
+  it("başarılı girişte yanıt gövdesinde token döner (mobil istemci için)", async () => {
+    findUnique.mockResolvedValue({ id: "u1", parolaHash: DOGRU_HASH });
+    const req = new Request("http://t", {
+      method: "POST",
+      body: JSON.stringify({ email: "a@b.com", parola: DOGRU_PAROLA }),
+    });
+    const res = await POST(req as any);
+    const body = await res.json();
+    expect(typeof body.token).toBe("string");
+    expect(body.token.split(".")).toHaveLength(3); // JWT: header.payload.signature
+  });
+
   it("rejects wrong password with 401", async () => {
     findUnique.mockResolvedValue({ id: "u1", parolaHash: DOGRU_HASH });
     const req = new Request("http://t", {

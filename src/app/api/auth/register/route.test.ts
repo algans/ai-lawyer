@@ -39,6 +39,15 @@ describe("POST /api/auth/register", () => {
     expect((await res.json()).userId).toBe("u1");
     expect(res.headers.get("set-cookie")).toContain("oturum=");
   });
+  it("başarılı kayıtta yanıt gövdesinde token döner (mobil istemci için)", async () => {
+    findUnique.mockResolvedValue(null);
+    create.mockResolvedValue({ id: "u1" });
+    const req = new Request("http://t", { method: "POST", body: JSON.stringify({ email: "a@b.com", parola: "gizli123" }) });
+    const res = await POST(req as any);
+    const body = await res.json();
+    expect(typeof body.token).toBe("string");
+    expect(body.token.split(".")).toHaveLength(3); // JWT: header.payload.signature
+  });
   it("rejects duplicate email with 409", async () => {
     findUnique.mockResolvedValue({ id: "existing" });
     const req = new Request("http://t", { method: "POST", body: JSON.stringify({ email: "a@b.com", parola: "gizli123" }) });

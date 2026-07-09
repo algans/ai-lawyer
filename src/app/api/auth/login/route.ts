@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
   if (!user || !gecerli) {
     return NextResponse.json({ error: "E-posta veya parola hatalı." }, { status: 401 });
   }
-  const res = NextResponse.json({ userId: user.id });
-  res.cookies.set(COOKIE_ADI, await oturumTokeni(user.id), {
+  // Token'ı bir kez üret; hem httpOnly cookie'ye (web) hem yanıt gövdesine (mobil SecureStore) koy.
+  const token = await oturumTokeni(user.id);
+  const res = NextResponse.json({ userId: user.id, token });
+  res.cookies.set(COOKIE_ADI, token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 7,
   });
   return res;

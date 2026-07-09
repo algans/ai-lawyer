@@ -23,8 +23,10 @@ export async function POST(req: NextRequest) {
   if (mevcut) return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
 
   const user = await prisma.user.create({ data: { email, ad, parolaHash: await hashParola(parola) } });
-  const res = NextResponse.json({ userId: user.id }, { status: 201 });
-  res.cookies.set(COOKIE_ADI, await oturumTokeni(user.id), {
+  // Token'ı bir kez üret; hem httpOnly cookie'ye (web) hem yanıt gövdesine (mobil SecureStore) koy.
+  const token = await oturumTokeni(user.id);
+  const res = NextResponse.json({ userId: user.id, token }, { status: 201 });
+  res.cookies.set(COOKIE_ADI, token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 7,
   });
   return res;
