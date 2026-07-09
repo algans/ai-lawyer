@@ -48,5 +48,13 @@ export async function oturumDogrula(token?: string): Promise<{ userId: string } 
 }
 
 export async function oturumCurrentUser(req: NextRequest): Promise<{ userId: string } | null> {
-  return oturumDogrula(req.cookies.get(COOKIE_ADI)?.value);
+  // Web: httpOnly cookie. Mobil: cookie taşıyamaz → Authorization: Bearer <jwt>.
+  const cookieToken = req.cookies.get(COOKIE_ADI)?.value;
+  if (cookieToken) {
+    const oturum = await oturumDogrula(cookieToken);
+    if (oturum) return oturum;
+  }
+  const authHeader = req.headers.get("authorization");
+  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  return oturumDogrula(bearer);
 }
