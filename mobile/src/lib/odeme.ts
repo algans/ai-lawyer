@@ -1,6 +1,7 @@
 import * as WebBrowser from "expo-web-browser";
-// SDK 57'de düz downloadAsync legacy'ye taşındı; başlıkla indirme + {uri,status} için legacy kullanıyoruz.
-import * as FileSystem from "expo-file-system/legacy";
+// SDK 54 (expo-file-system v19): klasik downloadAsync ana modülden re-export edilir (uyarıyla);
+// hedef yolu yeni API'deki Paths.cache'ten alınır. {uri,status} hata yönetimi için gerekli.
+import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { apiFetch } from "./api";
 import { API_URL } from "./config";
@@ -28,10 +29,10 @@ export async function belgeDurumu(documentId: string, token: string): Promise<"t
 
 // Ödenmiş belgeyi Bearer ile indirip paylaş/aç.
 export async function belgeIndir(documentId: string, format: "pdf" | "docx", token: string): Promise<void> {
-  const hedef = `${FileSystem.cacheDirectory}belge-${documentId}.${format}`;
+  const hedef = new FileSystem.File(FileSystem.Paths.cache, `belge-${documentId}.${format}`);
   const { uri, status } = await FileSystem.downloadAsync(
     `${API_URL}/api/document/${documentId}/download?format=${format}`,
-    hedef,
+    hedef.uri,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (status !== 200) throw { status, message: "Belge indirilemedi." };
